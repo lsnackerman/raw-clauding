@@ -1,0 +1,44 @@
+{
+  "claudeMdExcludes": [
+    "**/Library/repos/*/**/CLAUDE.md",
+    "**/Library/repos/*/**/CLAUDE.local.md",
+    "**/Library/repos/*/**/.claude/rules/**"
+  ],
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/Core/scripts/ensure-symlinks.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/Core/scripts/ensure-symlinks.sh"
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/Core/scripts/auto-archive-task.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/Core/scripts/auto-archive-task.sh --scan"
+          }
+        ]
+      }
+    ]
+  }
+}

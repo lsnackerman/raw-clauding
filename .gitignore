@@ -1,0 +1,20 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
+# Claude Code's generated wiring — created by Core/scripts/ensure-symlinks.sh
+# on first run. It's machine-specific (symlinks + your local settings), so it
+# shouldn't travel with the repo. Running the setup script rebuilds it.
+.claude/
+
+# Your auto-memory lives outside the repo (in Claude's own memory location) and
+# is symlinked in by the setup script. Never commit the link.
+Core/auto-memory
+
+# Editor noise
+.vscode/
+.idea/
+*.swp
