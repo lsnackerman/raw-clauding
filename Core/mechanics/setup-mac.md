@@ -21,7 +21,7 @@ This is a system for thinking *with* the AI, and setup is the first thing you do
 
 ### 2. Get your system (and make it yours)
 
-- [ ] **Download it**: on the repo's GitHub page, the green **Code** button → **Download ZIP** (or use the zip someone sent you, or `git clone`). Unzip it. *(GitHub names the unzipped folder `raw-clauding-main`; the `-main` is fine to keep or drop.)*
+- [ ] **Download it**: on the repo's GitHub page, the green **Code** button → **Download ZIP**. Unzip it. *(GitHub names the unzipped folder `raw-clauding-main`; the `-main` is fine to keep or drop.)* *(Know Git? `git clone` works too; just don't `git pull` once the system is yours, because our changes and yours collide. "You're set up," below, says how to bring in what's new.)*
 - [ ] **(Optional) Rename the folder** to something that feels like yours: `your-name-os`, `my-mind`, whatever. Naming is an ownership moment; you'll see this name every day. Letters, numbers and hyphens, no spaces. Also cool to leave as `raw-clauding` if you like.
 - [ ] **Move it into Documents** (or Desktop or anywhere in your home folder). Not Downloads.
 
@@ -87,6 +87,10 @@ This is a system for thinking *with* the AI, and setup is the first thing you do
 
 - [ ] Paste this into the Code tab:
   > **Let's rename `Core/you/` and `Core/rules/you.md` to my name, and update anything that points at them.**
+- [ ] **(Optional) Clear the top of your folder.** `README.md` is the GitHub front page and `LICENSE` is the terms you got the system under; your system doesn't need either up front. If you'd rather not see them, paste:
+  > **Move `README.md` into `Core/foundations/` as `readme-from-github.md`, move `LICENSE` beside it, fix the links inside, and add both to `Core/foundations/CLAUDE.md`.**
+
+  If you ever share your version, the LICENSE goes with it. Leave `.gitignore` where it is (you may not even see it): it has to stay at the top to work, and it keeps your machine's wiring out of anything you ever put on GitHub.
 
 ---
 
@@ -99,3 +103,4 @@ Head to `Core/practice/USER-GUIDE.md` Phase 2 for your first real conversation. 
 - **Something seems not to be running** (skills not wired, tasks not filing) → `Core/mechanics/hooks.md`. Each background script has a flag that reports on itself.
 - **The AI doesn't seem to remember you** → `Core/mechanics/memory-setup.md`.
 - **Day-to-day Claude Code** (permissions, diffs, ending sessions) → `Core/mechanics/claude-code.md`.
+- **Something new in the repo you want** → give `/tune` the repo's change history (`github.com/lsnackerman/raw-clauding/commits/main`) and roughly when you downloaded. By then your system has its own shape, so you keep what fits instead of copying ours over yours.

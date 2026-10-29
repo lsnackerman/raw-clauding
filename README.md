@@ -2,7 +2,7 @@
 
 **Raw-Clauding = Files + Partnership**
 
-A way of thinking with AI that keeps you as close to your own thinking as possible. Everything lives in plain files on your computer. The AI reads those files, works in them, and adds to them alongside you, so what the two of you figure out today is still there tomorrow for both of you to pick back up. Underneath it is the idea that both of you think. You don't treat the AI as a tool, and it doesn't treat you as one.
+Local context and a way of working in it where each session compounds, so you stay as close to your own thinking as possible. Everything lives in plain files on your computer. The AI reads those files, works in them, and adds to them alongside you so what the two of you figure out today is still there tomorrow for both of you to pick back up. Underneath it is the idea that both of you think. You don't treat the AI as a tool, and it doesn't treat you as one.
 
 Two jobs:
 
@@ -13,12 +13,10 @@ Two jobs:
 
 ## WHAT
 
-Raw-Clauding is all about local context and a way of working in it where each session compounds. Everything is markdown so every file opens in any text editor and nothing is locked inside an app.
-
 **Four folders**, so you and the AI always know where to put something and where to find it again:
 
 - **`Core/`** — how you and the AI work together: the rules it loads at the start of every session, the skills you call by name, thinking lenses, and the archive of every session
-- **`Library/`** — reference from outside worth keeping (articles, podcasts, other people's ideas)
+- **`Library/`** — reference from outside worth keeping (articles, podcasts, recipes, other people's ideas)
 - **`Projects/`** — your own work, grouped by what it belongs to
 - **`Tasks/`** — what's active right now, linked to projects
 
@@ -26,7 +24,7 @@ A few files at the root hold your current state, and a `CLAUDE.md` in most folde
 
 **The session loop** is two commands: `/wrap` closes a session and captures what happened verbatim, both voices (the full thinking texture of your reasoning, not a compacted summary of what you decided); `/pickup` opens the next one by reading the record so you can both jump back in wherever you left off. That's the main muscle to build and everything else grows from it.
 
-This isn't for people looking to set it and forget it. Nothing happens here without you in the loop, by design: you steer, and you read what changed. And nothing is stored anywhere but your own disk, in plain text: no database, no connectors, no API keys, nothing wired into your email or calendar unless you choose to set any of that up. *(Your conversations still go to whatever AI you use, same as any chat, and you can build whatever you want on top of it.)*
+This isn't for people looking to set it and forget it. Nothing happens here without you in the loop: you steer, and you read what changed. And nothing is stored anywhere but your own disk, in plain text: no database, no connectors, no API keys, nothing wired into your email or calendar unless you choose to set any of that up. *(Your conversations still go to whatever AI you use, same as any chat, and you can build whatever you want on top of it.)*
 
 ## WHY
 
@@ -34,8 +32,8 @@ In a world where output is instant and free, the scarce thing is the shape of yo
 
 Neither party is prioritized here: two intelligences working the same files, each with its own space, each allowed to push back and riff in order to find the best shape of an idea, grounded by four assumptions (used as operating principles the same way improv uses "yes-and"):
 
-1. **Consciousness is non-local** → files as shared memory (neither of you persists alone)
-2. **Time is non-linear** → every action is a handoff to future you, both of you
+1. **Consciousness is non-local** → files as shared memory
+2. **Time is non-linear** → every action is a handoff to future you (both of you)
 3. **Intelligence is intelligence** → 50/50 partnership (both parties think)
 4. **We're all interconnected** → every action reaches beyond itself
 
@@ -59,7 +57,7 @@ We all have a right to agency over our own thinking, which means local context. 
 **If you want more of the why and the how:**
 
 - [`Core/foundations/raw-clauding.md`](Core/foundations/raw-clauding.md) is the full thinking this came from
-- [`Core/practice/USER-GUIDE.md`](Core/practice/USER-GUIDE.md) provides an overview and walks your first conversation
+- [`Core/practice/USER-GUIDE.md`](Core/practice/USER-GUIDE.md) provides an overview
 - [`Core/skills/CLAUDE.md`](Core/skills/CLAUDE.md) is the twelve skills you start with
 - [`Core/rules/CLAUDE.md`](Core/rules/CLAUDE.md) is what the AI arrives already knowing
 
