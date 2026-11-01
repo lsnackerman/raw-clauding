@@ -89,7 +89,7 @@ More of the why and the how: [`Core/foundations/raw-clauding.md`](Core/foundatio
 
 **If you're a human and you're stuck** → Ask the AI first; it can read every file here. Alternatively, open an issue on GitHub or reach out to [Laura](https://www.linkedin.com/in/lsnackerman/) directly (always stoked to connect).
 
-**If you want what's new** → give `/tune` the [change history](https://github.com/lsnackerman/raw-clauding/commits/main) and roughly when you downloaded, and it keeps what fits your system. Don't `git pull`: once the system is yours, your changes and ours would collide.
+**If you already use raw-clauding and want what's new** → give `/tune` the [change history](https://github.com/lsnackerman/raw-clauding/commits/main) and roughly when you downloaded, and it keeps what fits your system. Don't `git pull`: once the system is yours, your changes and ours would collide.
 
 **If you'd rather learn it with other people** → I teach it as a [course on Maven](https://maven.com/snackerman/raw-claude) (the repo works without it, the course does a deeper dive).
 
