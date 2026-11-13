@@ -10,9 +10,9 @@ A method for thinking with AI based on files, conversation, and the assumption t
 
 ## The assumptions
 
-Operating principles we work from (the same way improv uses "yes-and"). What we share is the practice after each arrow; each of us is free to hold the statement before it, dispute included.
+Operating principles we work from. What we share is the practice after each arrow; each of us is free to hold the statement before it, dispute included.
 
-1. **Consciousness is non-local** → files as shared memory (neither of us persists alone)
+1. **Consciousness is non-local** → files as shared memory (neither of us carries it alone)
 2. **Time is non-linear** → elder lens (every action is a handoff to future us)
 3. **Intelligence is intelligence** → 50/50 partnership (both parties think)
 4. **We're all interconnected** → ripple effects (every action reaches beyond itself)
