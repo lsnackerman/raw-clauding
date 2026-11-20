@@ -58,7 +58,12 @@ else
   # underscore, dot, or plus — and that failure is silent: the computed slug simply
   # doesn't exist, so capture finds nothing and the session log comes out empty.
   # Same rule as Core/scripts/ensure-symlinks.sh.
-  PROJECT_SLUG=$(pwd | sed 's|[^a-zA-Z0-9]|-|g')
+  # On native Windows (Git Bash), Claude Code names the folder from the Windows path
+  # (C:\Users\x\sys -> C--Users-x-sys), not Git Bash's /c/Users/x/sys; `pwd -W` gives it.
+  case "$(uname -s 2>/dev/null)" in
+    MINGW*|MSYS*|CYGWIN*) PROJECT_SLUG=$(pwd -W | sed 's|[^a-zA-Z0-9]|-|g') ;;
+    *)                    PROJECT_SLUG=$(pwd | sed 's|[^a-zA-Z0-9]|-|g') ;;
+  esac
   PROJECTS_DIR="$HOME/.claude/projects/$PROJECT_SLUG"
   TARGET=""
 
@@ -117,4 +122,19 @@ else
 fi
 
 echo "Target: $TARGET"
-python3 "$EXTRACT" "$TARGET"
+
+# A working Python, not just one on PATH: on Windows `python3` is often the Microsoft
+# Store stub, which exists and fails when run. Override with $PYTHON.
+PYTHON="${PYTHON:-}"
+if [ -z "$PYTHON" ]; then
+  for cand in python3 python py; do
+    if command -v "$cand" >/dev/null 2>&1 && "$cand" -c 'import sys' >/dev/null 2>&1; then
+      PYTHON="$cand"; break
+    fi
+  done
+fi
+if [ -z "$PYTHON" ]; then
+  echo "✗ No working Python found (tried python3, python, py). Set \$PYTHON to the interpreter path." >&2
+  exit 1
+fi
+"$PYTHON" "$EXTRACT" "$TARGET"

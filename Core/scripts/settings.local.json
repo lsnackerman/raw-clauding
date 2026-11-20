@@ -2,8 +2,12 @@
   "claudeMdExcludes": [
     "**/Library/repos/*/**/CLAUDE.md",
     "**/Library/repos/*/**/CLAUDE.local.md",
-    "**/Library/repos/*/**/.claude/rules/**"
+    "**/Library/repos/*/**/.claude/rules/**",
+    "**/.claude/rules/CLAUDE.md"
   ],
+  "env": {
+    "PYTHONUTF8": "1"
+  },
   "hooks": {
     "SessionStart": [
       {

@@ -31,7 +31,9 @@ archive_if_done() {
 
   # status from YAML frontmatter (between --- markers)
   local STATUS
-  STATUS=$(awk '/^---$/{n++; next} n==1 && /^status:/{print $2; exit}' "$FULL_PATH")
+  # The sub() drops a trailing CR, so a task saved with Windows line endings
+  # (---\r) still has its front matter found.
+  STATUS=$(awk '{sub(/\r$/, "")} /^---$/{n++; next} n==1 && /^status:/{print $2; exit}' "$FULL_PATH")
   [ "$STATUS" = "done" ] || return 0
 
   local FILENAME DEST
@@ -99,4 +101,17 @@ fi
 
 FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
 [ -z "$FILE_PATH" ] && exit 0
-archive_if_done "${FILE_PATH#$REPO_ROOT/}"
+
+# On native Windows (Git Bash) the path arrives as C:\...\Tasks\x.md while REPO_ROOT
+# is /c/... (or /tmp/...), so compare the Windows forms.
+case "$(uname -s 2>/dev/null)" in
+  MINGW*|MSYS*|CYGWIN*)
+    WIN_ROOT="$(cygpath -aw "$REPO_ROOT")"
+    REL="$(cygpath -aw "$FILE_PATH" 2>/dev/null)"
+    REL="${REL#"$WIN_ROOT"\\}"
+    archive_if_done "${REL//\\//}"
+    ;;
+  *)
+    archive_if_done "${FILE_PATH#$REPO_ROOT/}"
+    ;;
+esac

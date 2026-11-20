@@ -1,0 +1,6 @@
+# Scripts keep LF line endings on every platform. Git for Windows' default
+# (core.autocrlf=true) would check them out as CRLF, and bash then fails on the
+# first line with "$'\r': command not found", so the hooks never run.
+*.sh   text eol=lf
+*.py   text eol=lf
+*.json text eol=lf
