@@ -75,6 +75,12 @@ def sig(body):
 
 
 def main():
+    # A Windows console defaults to cp1252, and the ✓/⚠/↔ below would raise
+    # UnicodeEncodeError and kill the /wrap check. Write UTF-8 regardless.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, 'reconfigure'):
+            stream.reconfigure(encoding='utf-8', errors='replace')
+
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default=None,
                     help="repo root (default: self-locate via AGENTS.md walk-up, cwd-independent)")

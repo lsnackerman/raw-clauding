@@ -5,6 +5,9 @@
     "**/Library/repos/*/**/.claude/rules/**",
     "**/.claude/rules/CLAUDE.md"
   ],
+  "env": {
+    "PYTHONUTF8": "1"
+  },
   "hooks": {
     "SessionStart": [
       {

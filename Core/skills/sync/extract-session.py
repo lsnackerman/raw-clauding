@@ -84,7 +84,9 @@ def find_project_sessions_dir():
         # EVERY non-alphanumeric character becomes "-", not just "/". Converting only
         # "/" is wrong for any folder with a space, underscore, dot, or plus — and it
         # fails silently, because the computed slug just doesn't exist.
-        slug = '-' + re.sub(r'[^a-zA-Z0-9]', '-', str(current)).lstrip('-')
+        # No added leading "-": "/Users/x" already becomes "-Users-x", and a Windows
+        # path "C:\Users\x" must become "C--Users-x", the folder name Claude Code uses.
+        slug = re.sub(r'[^a-zA-Z0-9]', '-', str(current))
         if slug.lower() in project_dirs:
             matches.append(project_dirs[slug.lower()])
         current = current.parent
@@ -228,7 +230,9 @@ def extract_messages(session_file):
     messages = []
     detected_format = None
 
-    with open(session_file, 'r') as f:
+    # Explicit UTF-8 everywhere: Windows Python's default is cp1252, which fails on the
+    # first em dash or emoji in a transcript.
+    with open(session_file, 'r', encoding='utf-8') as f:
         for line in f:
             try:
                 data = json.loads(line)
@@ -451,6 +455,12 @@ def with_session_id(text, session_id):
 
 
 def main():
+    # A Windows console defaults to cp1252, and printing the LOG (or a ⚠️ warning)
+    # would raise UnicodeEncodeError. Write UTF-8 regardless of the console.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, 'reconfigure'):
+            stream.reconfigure(encoding='utf-8', errors='replace')
+
     # Parse arguments
     session_id = None
     output_file = None
@@ -474,7 +484,7 @@ def main():
         output_file = sys.argv[2]
 
     output_path = Path(output_file) if output_file else None
-    existing = output_path.read_text() if output_path and output_path.exists() else None
+    existing = output_path.read_text(encoding='utf-8') if output_path and output_path.exists() else None
     recorded_id = yaml_session_id(existing) if existing is not None else None
 
     # Which session. The file's own record beats any guess: "most recently
@@ -532,16 +542,16 @@ def main():
                 # Idempotent refresh: keep everything through the header,
                 # replace what follows with the fresh extract. JSONL is the
                 # source of truth; the LOG section is a regeneratable snapshot.
-                output_path.write_text(existing[:idx] + formatted)
+                output_path.write_text(existing[:idx] + formatted, encoding='utf-8')
                 print(f"Refreshed LOG in: {output_file}", file=sys.stderr)
             else:
-                output_path.write_text(existing.rstrip('\n') + '\n\n## LOG\n' + formatted)
+                output_path.write_text(existing.rstrip('\n') + '\n\n## LOG\n' + formatted, encoding='utf-8')
                 print(f"Added LOG section to: {output_file}", file=sys.stderr)
         else:
             # New file: record the session and include the header, so every
             # later run refreshes the same session in place
             output_path.parent.mkdir(parents=True, exist_ok=True)
-            output_path.write_text(f"---\nsession_id: {session_id}\n---\n\n## LOG\n" + formatted)
+            output_path.write_text(f"---\nsession_id: {session_id}\n---\n\n## LOG\n" + formatted, encoding='utf-8')
             print(f"Wrote to: {output_file}", file=sys.stderr)
     else:
         print(formatted)
