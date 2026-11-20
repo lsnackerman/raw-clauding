@@ -24,6 +24,28 @@ if [ ! -f "AGENTS.md" ] || [ ! -d "Core" ]; then
   exit 2
 fi
 
+# --- Platform ---
+# Native Windows runs this under Git Bash (Claude Code runs hook commands there when
+# Git for Windows is installed). Git Bash's `ln -s` doesn't make a link: without
+# special setup it quietly COPIES the target and reports success, so every pointer
+# would be a copy that drifts. Directory junctions are the Windows link that needs no
+# admin rights and no Developer Mode, and Git Bash's `-L` sees them as links, so the
+# checks below work unchanged. Junctions only exist for folders, which shapes the
+# Windows layout:
+#   .claude/skills/<name>  junction per skill   (same as the symlink layout)
+#   .claude/rules          ONE junction to Core/rules (a rule is a file; files can't be
+#                          junctioned). Core/rules/CLAUDE.md is kept out by the
+#                          claudeMdExcludes entry in Core/scripts/settings.local.json.
+#   .claude/CLAUDE.md      a one-line file, `@../AGENTS.md` (an import, not a link)
+#   Core/auto-memory       junction to Claude Code's memory folder
+WINDOWS=0
+case "$(uname -s 2>/dev/null)" in
+  MINGW*|MSYS*|CYGWIN*) WINDOWS=1 ;;
+esac
+
+# The import line that stands in for the .claude/CLAUDE.md -> AGENTS.md link on Windows.
+CLAUDE_MD_IMPORT="@../AGENTS.md"
+
 # --- Mode detection ---
 # Terminal stdin (manual run), empty stdin, or a SessionStart payload → full scan
 # PostToolUse payload → check the single edited file
@@ -65,8 +87,16 @@ else
     # No file path in the JSON — nothing to act on for this edit.
     [ -z "$FILE_PATH" ] && exit 0
 
-    # Normalize to a relative path
-    FILE_PATH="${FILE_PATH#$REPO_ROOT/}"
+    # Normalize to a relative path. On Windows the path arrives as C:\...\Core\...
+    # while REPO_ROOT is Git Bash's /c/... (or /tmp/...), so compare the Windows forms.
+    if [ "$WINDOWS" = "1" ]; then
+      WIN_ROOT="$(cygpath -aw "$REPO_ROOT")"
+      WIN_FILE="$(cygpath -aw "$FILE_PATH" 2>/dev/null)"
+      FILE_PATH="${WIN_FILE#"$WIN_ROOT"\\}"
+      FILE_PATH="${FILE_PATH//\\//}"
+    else
+      FILE_PATH="${FILE_PATH#$REPO_ROOT/}"
+    fi
 
     case "$FILE_PATH" in
       Core/skills/*|Core/rules/*) MODE="single" ;;
@@ -87,6 +117,10 @@ WARNED=0
 # isn't, which is the hardest kind of broken to diagnose later.
 make_link() {
   local target="$1" link_path="$2"
+  if [ "$WINDOWS" = "1" ]; then
+    make_junction "$target" "$link_path"
+    return
+  fi
   if ln -s "$target" "$link_path" 2>/dev/null; then
     echo "Symlinked: $link_path -> $target"
     LINKED=$((LINKED + 1))
@@ -102,6 +136,41 @@ make_link() {
       echo "  your home directory and run this again." >&2
       echo "  Other possibility: .claude/ isn't writable — check its permissions." >&2
     fi
+  fi
+}
+
+# Windows: a directory junction. A junction stores an absolute path, so the relative
+# target is resolved from the link's own folder first. `mklink` is a cmd built-in;
+# MSYS_NO_PATHCONV stops Git Bash rewriting its `/J` switch into a path. Success is
+# judged by the result (`-L` on the new path), never by mklink's exit code alone.
+make_junction() {
+  local target="$1" link_path="$2" abs_target
+  abs_target="$(cd "$(dirname "$link_path")" 2>/dev/null && cd "$target" 2>/dev/null && pwd)"
+  if [ -n "$abs_target" ] && \
+     MSYS_NO_PATHCONV=1 cmd /c mklink /J "$(cygpath -w "$link_path")" "$(cygpath -w "$abs_target")" >/dev/null 2>&1 && \
+     [ -L "$link_path" ]; then
+    echo "Linked (junction): $link_path -> $target"
+    LINKED=$((LINKED + 1))
+  else
+    FAILED=$((FAILED + 1))
+    echo "COULD NOT create junction: $link_path -> $target" >&2
+    if [ "$FAILED" = "1" ]; then
+      echo "  The AI won't see these until the links exist." >&2
+      echo "  Junctions need an NTFS drive (not exFAT, FAT32 or a network share) and a" >&2
+      echo "  target folder that exists. Move the system folder to a local folder outside" >&2
+      echo "  OneDrive (your user folder is the easy default), and run this again." >&2
+    fi
+  fi
+}
+
+# Same folder, whatever form the path is written in. On Windows a junction reads back
+# as /c/Users/... or /tmp/..., while a path built from $HOME may be written differently;
+# comparing the Windows forms makes them agree.
+same_path() {
+  if [ "$WINDOWS" = "1" ]; then
+    [ "$(cygpath -aw "$1" 2>/dev/null)" = "$(cygpath -aw "$2" 2>/dev/null)" ]
+  else
+    [ "$1" = "$2" ]
   fi
 }
 
@@ -165,6 +234,16 @@ link_rule() {
   fi
 }
 
+# Windows only: .claude/rules is one junction to Core/rules (see Platform, above).
+link_rules_dir() {
+  if [ -e ".claude/rules" ] && [ ! -L ".claude/rules" ]; then
+    # A real folder: left by an earlier run whose `ln -s` made copies, or made by hand.
+    warn_not_a_link ".claude/rules" "Core/rules (on Windows the whole folder is one junction)"
+    return 1
+  fi
+  [ -L ".claude/rules" ] || make_link "../Core/rules" ".claude/rules"
+}
+
 clean_orphans() {
   # Remove symlinks that point to nothing (source renamed/moved/deleted).
   # Without this, renaming Core/rules/X.md → Y.md and editing creates the
@@ -183,11 +262,13 @@ clean_orphans() {
 
 if [ "$MODE" = "full" ]; then
   # Full scan: check all skills, rules, and CLAUDE.md
-  mkdir -p .claude/skills .claude/rules
+  mkdir -p .claude/skills
+  # On Windows .claude/rules is itself the junction, so it must not be made as a folder.
+  [ "$WINDOWS" = "1" ] || mkdir -p .claude/rules
 
   # Clean orphan symlinks (renames/moves leave dangling links otherwise)
   clean_orphans .claude/skills
-  clean_orphans .claude/rules
+  [ "$WINDOWS" = "1" ] || clean_orphans .claude/rules
 
   # Hooks config — the automation (symlink sync, task archive) is wired
   # here. If this file already exists we must not clobber it (it may hold permissions
@@ -213,7 +294,23 @@ if [ "$MODE" = "full" ]; then
   fi
 
   # CLAUDE.md → AGENTS.md (the compass)
-  if [ ! -L ".claude/CLAUDE.md" ] && [ ! -e ".claude/CLAUDE.md" ]; then
+  if [ "$WINDOWS" = "1" ]; then
+    # A file can't be junctioned, so on Windows .claude/CLAUDE.md is a one-line import
+    # of AGENTS.md — Claude Code reads AGENTS.md through it, and there's no second copy.
+    if [ ! -e ".claude/CLAUDE.md" ]; then
+      if printf '%s\n' "$CLAUDE_MD_IMPORT" > ".claude/CLAUDE.md" 2>/dev/null; then
+        echo "Created: .claude/CLAUDE.md (imports ../AGENTS.md)"
+        LINKED=$((LINKED + 1))
+      else
+        FAILED=$((FAILED + 1))
+        echo "COULD NOT create .claude/CLAUDE.md — the AI won't load AGENTS.md." >&2
+      fi
+    elif [ "$(tr -d '\r' < .claude/CLAUDE.md)" != "$CLAUDE_MD_IMPORT" ]; then
+      # Anything else here is most likely a copy Git Bash's `ln -s` made of AGENTS.md
+      # on an earlier run: it loads, but it never changes when AGENTS.md does.
+      warn_not_a_link ".claude/CLAUDE.md" "AGENTS.md (on Windows this file should hold just: $CLAUDE_MD_IMPORT)"
+    fi
+  elif [ ! -L ".claude/CLAUDE.md" ] && [ ! -e ".claude/CLAUDE.md" ]; then
     make_link "../AGENTS.md" ".claude/CLAUDE.md"
   fi
 
@@ -231,6 +328,11 @@ if [ "$MODE" = "full" ]; then
   # plain `cwd` field. That's a fact rather than an inference, so we search for the
   # directory whose transcripts say they came from HERE.
   ABS_REPO_ROOT="$(cd "$REPO_ROOT" && pwd)"
+  # On Windows, Claude Code records and names folders by the Windows path
+  # (C:\Users\x\sys, stored as "C:\\Users\\x\\sys" in the transcript), never by Git
+  # Bash's /c/Users/x/sys. Matching or naming from the Git Bash form finds nothing and
+  # creates a memory folder the AI never reads.
+  [ "$WINDOWS" = "1" ] && ABS_REPO_ROOT="$(cygpath -aw "$REPO_ROOT")"
 
   find_project_dir() {
     local d f cwd
@@ -238,7 +340,7 @@ if [ "$MODE" = "full" ]; then
       [ -d "$d" ] || continue
       for f in "$d"*.jsonl; do
         [ -f "$f" ] || continue
-        cwd=$(grep -m1 -o '"cwd":"[^"]*"' "$f" 2>/dev/null | sed 's/^"cwd":"//; s/"$//')
+        cwd=$(grep -m1 -o '"cwd":"[^"]*"' "$f" 2>/dev/null | sed 's/^"cwd":"//; s/"$//; s/\\\\/\\/g')
         if [ "$cwd" = "$ABS_REPO_ROOT" ]; then printf '%s' "${d%/}"; return 0; fi
         break   # one transcript per directory is enough to identify it
       done
@@ -257,6 +359,7 @@ if [ "$MODE" = "full" ]; then
     # every non-alphanumeric character becomes "-", and case is preserved.
     #   /Users/x/My OS_test.v2  ->  -Users-x-My-OS-test-v2
     #   /Users/x/Kit+OS (v2)    ->  -Users-x-Kit-OS--v2-
+    #   C:\Users\x\my_sys       ->  C--Users-x-my-sys      (native Windows)
     # Converting only "/" (the obvious guess) is wrong for any folder with a space,
     # underscore, dot, or plus — and that failure is silent: MEMORY.md gets created
     # somewhere real that the AI never reads. (Claude Code's own docs describe the
@@ -276,7 +379,7 @@ if [ "$MODE" = "full" ]; then
   # nothing errors. Carry the old file forward and re-point.
   if [ -L "Core/auto-memory" ]; then
     OLD_MEM_DIR="$(readlink "Core/auto-memory")"
-    if [ "$OLD_MEM_DIR" != "$MEMORY_DIR" ]; then
+    if ! same_path "$OLD_MEM_DIR" "$MEMORY_DIR"; then
       echo "Your auto-memory was pointing at the wrong place (folder renamed or moved,"
       echo "or set up before your first session, when the location wasn't knowable yet)."
       # Carry the old file forward BEFORE touching the symlink — and only drop the
@@ -345,16 +448,20 @@ MEMEOF
     link_skill "$skill_dir"
   done
 
-  for rule_file in Core/rules/*.md; do
-    [ -f "$rule_file" ] || continue
-    link_rule "$rule_file"
-  done
+  if [ "$WINDOWS" = "1" ]; then
+    link_rules_dir
+  else
+    for rule_file in Core/rules/*.md; do
+      [ -f "$rule_file" ] || continue
+      link_rule "$rule_file"
+    done
+  fi
 
 elif [ "$MODE" = "single" ]; then
   # Clean orphan symlinks first — catches renames/moves done mid-session.
   # Cost: walks the few symlinks in .claude/, microseconds.
   clean_orphans .claude/skills
-  clean_orphans .claude/rules
+  [ "$WINDOWS" = "1" ] || clean_orphans .claude/rules
 
   # Single file: just handle the one that was written
   if [[ "$FILE_PATH" =~ ^Core/skills/([^/]+) ]]; then
@@ -362,8 +469,12 @@ elif [ "$MODE" = "single" ]; then
     mkdir -p .claude/skills
     link_skill "Core/skills/$skill_name"
   elif [[ "$FILE_PATH" =~ ^Core/rules/([^/]+)$ ]]; then
-    mkdir -p .claude/rules
-    link_rule "$FILE_PATH"
+    if [ "$WINDOWS" = "1" ]; then
+      link_rules_dir   # the one junction already covers every rule; make sure it exists
+    else
+      mkdir -p .claude/rules
+      link_rule "$FILE_PATH"
+    fi
   fi
 fi
 
@@ -379,6 +490,13 @@ if [ "$MANUAL" = "1" ]; then
   rules_linked=$(find .claude/rules -maxdepth 1 -type l 2>/dev/null | wc -l | tr -d ' ')
   skills_expected=$(find Core/skills -maxdepth 1 -mindepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')
   rules_expected=$(find Core/rules -maxdepth 1 -name '*.md' ! -name 'CLAUDE.md' 2>/dev/null | wc -l | tr -d ' ')
+  if [ "$WINDOWS" = "1" ]; then
+    # One junction carries every rule, so count what reads through it.
+    rules_linked=0
+    if [ -L ".claude/rules" ] && [ -d ".claude/rules" ]; then
+      rules_linked=$(find .claude/rules/ -maxdepth 1 -name '*.md' ! -name 'CLAUDE.md' 2>/dev/null | wc -l | tr -d ' ')
+    fi
+  fi
 
   echo ""
   echo "Setup check: $skills_linked/$skills_expected skills and $rules_linked/$rules_expected rules wired."
@@ -389,10 +507,26 @@ if [ "$MANUAL" = "1" ]; then
   # fine all session and capture breaks at the end — on the step you can't afford to lose.
   # The setup guide's Python step checks this; this is the backstop for anyone who skipped it.
   # (Name the step, never number it: the Mac and Windows guides number it differently.)
-  if ! command -v python3 >/dev/null 2>&1; then
-    echo "⚠️  python3: MISSING — /wrap and /sync cannot save your sessions." >&2
+  # Run each candidate, don't just look it up: on Windows `python3` is often the
+  # Microsoft Store stub, which is on PATH and fails when run.
+  PY_OK=0
+  for cand in python3 python py; do
+    if command -v "$cand" >/dev/null 2>&1 && "$cand" -c 'import sys' >/dev/null 2>&1; then
+      PY_OK=1; break
+    fi
+  done
+  if [ "$PY_OK" != "1" ]; then
+    echo "⚠️  Python: MISSING (tried python3, python, py) — /wrap and /sync cannot save your sessions." >&2
     echo "   Fix: your setup guide's Python step (Core/mechanics/setup-mac.md or setup-windows.md)." >&2
     problems=1
+  fi
+
+  # Windows: .claude/rules is a junction to Core/rules, so Core/rules/CLAUDE.md would
+  # load as a rule every session unless the settings exclude it.
+  if [ "$WINDOWS" = "1" ] && ! grep -q '\.claude/rules/CLAUDE\.md' ".claude/settings.local.json" 2>/dev/null; then
+    echo "Note: .claude/settings.local.json has no claudeMdExcludes entry for .claude/rules/CLAUDE.md." >&2
+    echo "   Core/rules/CLAUDE.md will load as a rule every session. Copy the" >&2
+    echo "   \"claudeMdExcludes\" block from Core/scripts/settings.local.json into it." >&2
   fi
 
   if [ "$FAILED" -gt 0 ]; then

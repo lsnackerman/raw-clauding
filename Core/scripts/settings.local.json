@@ -2,7 +2,8 @@
   "claudeMdExcludes": [
     "**/Library/repos/*/**/CLAUDE.md",
     "**/Library/repos/*/**/CLAUDE.local.md",
-    "**/Library/repos/*/**/.claude/rules/**"
+    "**/Library/repos/*/**/.claude/rules/**",
+    "**/.claude/rules/CLAUDE.md"
   ],
   "hooks": {
     "SessionStart": [
