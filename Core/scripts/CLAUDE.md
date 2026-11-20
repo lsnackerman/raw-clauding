@@ -8,7 +8,7 @@ Hooks and config that run quietly so the system stays consistent without manual 
 
 | File | What it does |
 |------|-------------|
-| **ensure-symlinks.sh** | Keeps `.claude/skills/` and `.claude/rules/` aligned with `Core/skills/` and `Core/rules/`. On first run, also creates `.claude/settings.local.json` (from the template here), `.claude/CLAUDE.md` (symlinked to AGENTS.md), and `Core/auto-memory/` (symlinked to Claude's native memory location, with a starter MEMORY.md). Idempotent. |
+| **ensure-symlinks.sh** | Keeps `.claude/skills/` and `.claude/rules/` aligned with `Core/skills/` and `Core/rules/`. On first run, also creates `.claude/settings.local.json` (from the template here), `.claude/CLAUDE.md` (symlinked to AGENTS.md), and `Core/auto-memory/` (symlinked to Claude's native memory location, with a starter MEMORY.md). Idempotent. On native Windows (Git Bash) it makes junctions instead, with one junction for all of `.claude/rules` and an `@../AGENTS.md` import as `.claude/CLAUDE.md`; `Core/mechanics/setup-windows.md` § How native Windows wires itself. |
 | **auto-archive-task.sh** | Watches Task doc YAML. When a task's `status` changes to `done`, it moves the file to `Tasks/_done/`. |
 | **dup-check.py** | Checks that an actionable isn't tracked on two of `ALIVE.md` / `PULLING.md` / `THREADS.md`, the mutually-exclusive rule `/wrap` Step 1 teaches. Report-only; `/wrap` runs it at the end of Step 3, and you can run it by hand any time. Prints how many items it examined (a ✓ over zero items is not a pass) and exits 2 if it found none of the three files. |
 | **settings.local.json** | Claude Code settings template. The source of truth for hook config; copied into `.claude/` by `ensure-symlinks.sh` on first run. |

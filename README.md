@@ -62,7 +62,7 @@ You'll need a **paid Claude plan** (Pro or above), a **Mac, Windows PC or Linux 
 **Open the guide for your computer** and paste it, or its link, into any AI chat. It walks you through installing the Claude desktop app, downloading this folder, and opening it in the app's **Code** tab, which is where the AI works in your files. Then the AI works through setup with you and explains each step as it goes. You read along and ask about anything.
 
 - **Mac** → [`setup-mac.md`](Core/mechanics/setup-mac.md)
-- **Windows or Linux** → [`setup-windows.md`](Core/mechanics/setup-windows.md) *(Windows sets up Ubuntu first, and your system lives inside it. Linux is covered too, including a terminal route for distributions the desktop app doesn't support.)*
+- **Windows or Linux** → [`setup-windows.md`](Core/mechanics/setup-windows.md) *(Windows has two paths: native, with your system in a normal folder on `C:`, or inside Ubuntu through WSL. Linux is covered too, including a terminal route for distributions the desktop app doesn't support.)*
 
 The guide ends by sending you to [`USER-GUIDE.md`](Core/practice/USER-GUIDE.md) for your first conversation. From then on your rules and your compass load at the start of every session, so the AI arrives already knowing how you work together.
 

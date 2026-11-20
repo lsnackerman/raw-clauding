@@ -16,7 +16,7 @@ This is what keeps your system tool-agnostic: switch tools tomorrow and your thi
 
 ## How symlinks stay in sync
 
-**Automated, via a hook.** The `ensure-symlinks.sh` script runs on SessionStart and after every Write/Edit. When you add a new skill or rule under `Core/`, it gets a symlink into `.claude/` automatically, with no manual step. (It also creates the System Compass and Auto-Memory links on first run.) See `Core/mechanics/hooks.md` for how it's wired.
+**Automated, via a hook.** The `ensure-symlinks.sh` script runs on SessionStart and after every Write/Edit. When you add a new skill or rule under `Core/`, it gets a symlink into `.claude/` automatically, with no manual step. (It also creates the System Compass and Auto-Memory links on first run.) See `Core/mechanics/hooks.md` for how it's wired. On native Windows it makes junctions rather than symlinks, laid out a little differently: `Core/mechanics/setup-windows.md` § How native Windows wires itself.
 
 **Manual** (for one-off symlinks, or if you're on a system without the hook):
 
